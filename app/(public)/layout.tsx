@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Scale, Phone, Mail } from 'lucide-react'
+import { Scale, Phone, Mail, ArrowRight } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -11,41 +11,39 @@ export default function PublicLayout({
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
       {/* Redesigned Header */}
-      <header className="border-b bg-background/90 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link
             href="/"
             className="flex items-center gap-2 font-bold text-xl tracking-tight text-foreground hover:opacity-80 transition-opacity"
           >
-            <Scale className="h-6 w-6 text-teal-500" aria-hidden="true" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-emerald-500">DIA</span>
+            <Scale className="h-6 w-6 text-primary" aria-hidden="true" />
+            <span className="text-foreground">DIA</span>
           </Link>
           
           {/* Main Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <Link href="/" className="text-teal-600 border-b-2 border-teal-600 py-1">Home</Link>
-            <Link href="/legal" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              Legal
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-50"><path d="m6 9 6 6 6-6"/></svg>
-            </Link>
-            <Link href="/resources" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
-            <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
+            <Link href="/" className="text-foreground transition-colors hover:text-primary">Home</Link>
+            <Link href="/signup/civilian" className="text-muted-foreground transition-colors hover:text-primary">Get Legal Help</Link>
+            <Link href="/resources/find-lawyer" className="text-muted-foreground transition-colors hover:text-primary">Find a Lawyer</Link>
+            <Link href="/resources" className="text-muted-foreground transition-colors hover:text-primary">Resources</Link>
+            <Link href="/about" className="text-muted-foreground transition-colors hover:text-primary">About DIA</Link>
           </nav>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/signup/lawyer"
-              className={cn(buttonVariants({ variant: 'default' }), "bg-green-600 hover:bg-green-700 text-white shadow-sm")}
-            >
-              Register as Lawyer
+          <div className="flex items-center gap-4 text-sm font-medium">
+            <Link href="/login" className="hidden md:block text-muted-foreground hover:text-primary transition-colors">
+              Lawyer Portal
+            </Link>
+            <Link href="/login" className="hidden md:block text-muted-foreground hover:text-primary transition-colors">
+              Sign In
             </Link>
             <Link
-              href="/login"
-              className={cn(buttonVariants({ variant: 'default' }), "bg-blue-600 hover:bg-blue-700 text-white shadow-sm")}
+              href="/signup/civilian"
+              className={cn(buttonVariants({ variant: 'default', size: 'sm' }), "bg-primary hover:bg-primary/90 text-white")}
             >
-              Lawyer Login
+              Get Legal Help
             </Link>
           </div>
         </div>
@@ -54,46 +52,70 @@ export default function PublicLayout({
       {/* Main Content */}
       <main className="flex-1 flex flex-col">{children}</main>
 
-      {/* Redesigned Footer */}
-      <footer className="bg-[#10172A] text-slate-300 py-16 text-sm">
-        <div className="mx-auto max-w-7xl px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Left Side */}
-          <div className="space-y-6 max-w-md">
+      {/* Structured Footer */}
+      <footer className="bg-[#0B1120] text-slate-400 py-16 text-sm border-t border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-12">
+          {/* Column 1 - Brand */}
+          <div className="col-span-2 lg:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl text-white">
-              <Scale className="h-6 w-6 text-teal-400" aria-hidden="true" />
+              <Scale className="h-6 w-6 text-primary" aria-hidden="true" />
               <span>DIA</span>
             </Link>
-            <p className="text-slate-400 leading-relaxed">
-              Digital Inclusive Aid provides premium, accessible, and uncompromisingly secure legal support for all, specializing in empowering women and vulnerable groups.
+            <p className="leading-relaxed">
+              Digital Inclusive Aid is a secure legal infrastructure platform connecting individuals with verified legal professionals.
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-teal-400" />
-                <span>24/7 Helpline: 8522951739</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-teal-400" />
-                <span>support@dia-legal.org</span>
-              </div>
-            </div>
           </div>
 
-          {/* Right Side */}
-          <div className="md:ml-auto">
-            <h3 className="font-semibold text-white mb-4 text-base">Quick Links</h3>
+          {/* Column 2 - Get Help */}
+          <div>
+            <h3 className="font-semibold text-white mb-4 text-base">Get Help</h3>
             <ul className="space-y-3">
-              <li><Link href="/legal" className="hover:text-white transition-colors">Legal Support</Link></li>
-              <li><Link href="/resources" className="hover:text-white transition-colors">Find a Lawyer</Link></li>
-              <li><Link href="/about" className="hover:text-white transition-colors">Safe Zones</Link></li>
-              <li><Link href="/resources" className="hover:text-white transition-colors">Resources</Link></li>
+              <li><Link href="/signup/civilian" className="hover:text-white transition-colors">Request Assistance</Link></li>
+              <li><Link href="/resources/find-lawyer" className="hover:text-white transition-colors">Find a Professional</Link></li>
+              <li><Link href="/track" className="hover:text-white transition-colors">Track a Request</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 3 - Professionals */}
+          <div>
+            <h3 className="font-semibold text-white mb-4 text-base">Professionals</h3>
+            <ul className="space-y-3">
+              <li><Link href="/signup/lawyer" className="hover:text-white transition-colors">Join DIA</Link></li>
+              <li><Link href="/login" className="hover:text-white transition-colors">Lawyer Portal</Link></li>
+              <li><Link href="/about/verification" className="hover:text-white transition-colors">Verification Process</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 4 - Resources */}
+          <div>
+            <h3 className="font-semibold text-white mb-4 text-base">Resources</h3>
+            <ul className="space-y-3">
+              <li><Link href="/resources/guides" className="hover:text-white transition-colors">Legal Guides</Link></li>
+              <li><Link href="/resources/faq" className="hover:text-white transition-colors">FAQs</Link></li>
+              <li><Link href="/resources/community" className="hover:text-white transition-colors">Community Resources</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 5 - Organization */}
+          <div>
+            <h3 className="font-semibold text-white mb-4 text-base">Organization</h3>
+            <ul className="space-y-3">
+              <li><Link href="/about" className="hover:text-white transition-colors">About DIA</Link></li>
+              <li><Link href="/partners" className="hover:text-white transition-colors">Partnerships</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
             </ul>
           </div>
         </div>
         
         {/* Bottom */}
-        <div className="mx-auto max-w-7xl px-4 mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mx-auto max-w-7xl px-4 mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
           <p>© {new Date().getFullYear()} Digital Inclusive Aid. All rights reserved.</p>
-          <p>Elevating the standard of <span className="text-pink-500 font-medium">justice</span> for everyone.</p>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <Link href="/accessibility" className="hover:text-white transition-colors">Accessibility</Link>
+            <Link href="/legal-disclaimer" className="hover:text-white transition-colors">Legal Disclaimer</Link>
+          </div>
         </div>
       </footer>
     </div>

@@ -168,11 +168,16 @@ create table public.lawyer_documents (
   -- Original filename, stored for display purposes only.
   file_name     text,
 
-  -- Path inside the 'lawyer-documents' Supabase Storage bucket.
+  -- S3 object key (NOT a public URL).
   -- Example: "user-uuid/bar_certificate-1718000000000.pdf"
+  -- Pre-signed GET URLs are generated on demand via lib/storage.ts.
   file_url      text,
 
-  uploaded_at   timestamptz default now()
+  uploaded_at   timestamptz default now(),
+
+  -- Ensures a lawyer can only have one document of each type.
+  -- Required for the upsert in features/lawyer/actions.ts to work correctly.
+  unique (lawyer_id, document_type)
 );
 
 
