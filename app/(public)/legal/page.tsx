@@ -1,73 +1,125 @@
 import Link from 'next/link'
-import { ShieldCheck, Scale, Users, HeartHandshake } from 'lucide-react'
+import {
+  ShieldCheck,
+  Scale,
+  Users,
+  HeartHandshake,
+  Home as HomeIcon,
+  Briefcase,
+  FileText,
+  ArrowRight,
+} from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export const metadata = {
-  title: 'Legal Services - DIA',
+  title: 'Areas of Legal Support',
+  description:
+    'The legal areas DIA can connect you with verified professionals for.',
 }
+
+const AREAS = [
+  {
+    icon: HeartHandshake,
+    title: 'Family & domestic matters',
+    desc: 'Divorce, maintenance, child custody, and guardianship. Handled with care and confidentiality.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Women\u2019s safety & protection',
+    desc: 'Protection under the Domestic Violence Act, harassment, and dowry-related matters, with trauma-informed support.',
+  },
+  {
+    icon: Briefcase,
+    title: 'Workplace & employment',
+    desc: 'Unfair dismissal, unpaid wages, workplace harassment, and your rights as an employee.',
+  },
+  {
+    icon: HomeIcon,
+    title: 'Housing & tenancy',
+    desc: 'Eviction, security deposits, rent disputes, and disagreements with landlords.',
+  },
+  {
+    icon: Users,
+    title: 'Civil rights & discrimination',
+    desc: 'Standing up against discrimination and civil rights violations, and protecting your dignity.',
+  },
+  {
+    icon: FileText,
+    title: 'Documents & records',
+    desc: 'Identity documents, certificates, affidavits, and official record corrections.',
+  },
+]
 
 export default function LegalPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-white pt-24 pb-16 px-4">
-      <div className="max-w-5xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-[#10172A] mb-6">Our Legal Expertise</h1>
-          <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            We connect you with specialized legal experts across a wide range of practice areas, ensuring you get the precise representation you need.
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header */}
+      <section className="pt-24 pb-16 px-4 border-b bg-muted/30">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground mb-6">
+            Areas of legal support
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            These are the areas we most often help with. Not sure where your
+            situation fits? Ask anyway, we&apos;ll help you find the right kind of
+            lawyer.
           </p>
         </div>
+      </section>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex gap-6">
-            <div className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
-              <HeartHandshake className="w-6 h-6" />
+      {/* Areas grid */}
+      <section className="py-20 px-4 bg-background">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
+          {AREAS.map((area) => (
+            <div
+              key={area.title}
+              className="bg-card border rounded-2xl p-8 shadow-sm hover:border-primary/50 transition-colors flex gap-5"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <area.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {area.title}
+                </h3>
+                <p className="text-muted-foreground">{area.desc}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#10172A] mb-2">Family & Domestic Law</h3>
-              <p className="text-slate-500 mb-4">Compassionate representation for divorce, child custody, alimony, and domestic violence protection orders.</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex gap-6">
-            <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#10172A] mb-2">Criminal Defense</h3>
-              <p className="text-slate-500 mb-4">Fierce advocacy and defense strategies for those facing criminal charges, ensuring your rights are protected.</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex gap-6">
-            <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#10172A] mb-2">Civil Rights & Employment</h3>
-              <p className="text-slate-500 mb-4">Fighting workplace discrimination, harassment, and civil rights violations. We stand up for your dignity.</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 flex gap-6">
-            <div className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
-              <Scale className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#10172A] mb-2">Immigration Law</h3>
-              <p className="text-slate-500 mb-4">Guidance through complex immigration processes, visas, asylum applications, and deportation defense.</p>
-            </div>
-          </div>
+          ))}
         </div>
+      </section>
 
-        <div className="bg-[#10172A] rounded-3xl p-10 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Need Specialized Help?</h2>
-          <p className="text-slate-400 mb-8 max-w-xl mx-auto">If you don&apos;t see your specific legal need listed, reach out to us. Our network includes experts in almost every field of law.</p>
-          <Link href="/signup/civilian" className={cn(buttonVariants({ size: 'lg' }), "bg-teal-500 hover:bg-teal-600 text-white rounded-full px-8")}>
-            Match with a Lawyer Now
+      {/* Honest note */}
+      <section className="px-4 pb-20 bg-background">
+        <div className="max-w-3xl mx-auto bg-muted/40 border rounded-2xl p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            DIA connects you with independent, verified lawyers. We don&apos;t provide
+            legal advice ourselves, and matching depends on lawyers available for
+            your issue and area.
+          </p>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="px-4 pb-24 bg-background">
+        <div className="max-w-5xl mx-auto bg-[#0B1120] rounded-3xl p-10 md:p-14 text-center text-white">
+          <Scale className="w-10 h-10 text-primary-foreground/80 mx-auto mb-6" />
+          <h2 className="text-3xl font-bold mb-4">
+            Not sure who you need to talk to?
+          </h2>
+          <p className="text-slate-400 mb-8 max-w-xl mx-auto">
+            Describe your situation in plain words. We&apos;ll help match you with a
+            verified lawyer suited to it.
+          </p>
+          <Link
+            href="/signup?role=civilian"
+            className={cn(buttonVariants({ size: 'lg' }), 'gap-2')}
+          >
+            Get legal help <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

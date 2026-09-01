@@ -6,7 +6,7 @@ import type {
 } from './auth'
 
 // ---------------------------------------------------------------------------
-// Row types — mirror the Supabase schema exactly.
+// Row types - mirror the Supabase schema exactly.
 // Use these for typed query results; never mutate them directly.
 // ---------------------------------------------------------------------------
 
@@ -17,6 +17,7 @@ export interface ProfileRow {
   full_name: string | null
   phone: string | null
   avatar_url: string | null
+  purpose: string | null
   is_active: boolean
   email_verified: boolean
   created_at: string
@@ -80,8 +81,15 @@ export interface ActivityLogRow {
   created_at: string
 }
 
+export interface CountryRow {
+  code: string
+  name: string
+  dial_code: string
+  sort_order: number
+}
+
 // ---------------------------------------------------------------------------
-// Insert types — used when writing to the database.
+// Insert types - used when writing to the database.
 // ---------------------------------------------------------------------------
 
 export type ProfileInsert = Omit<ProfileRow, 'created_at' | 'updated_at'>

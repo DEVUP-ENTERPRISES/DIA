@@ -1,6 +1,6 @@
-# DIA — Digital Inclusive Aid
+# DIA - Digital Inclusive Aid
 
-A legal access platform connecting citizens with verified legal professionals. DIA provides secure, confidential, and accessible legal support — specialising in empowering women and vulnerable communities.
+A legal access platform connecting citizens with verified legal professionals. DIA provides secure, confidential, and accessible legal support - specialising in empowering women and vulnerable communities.
 
 ---
 
@@ -9,7 +9,7 @@ A legal access platform connecting citizens with verified legal professionals. D
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
-- [Features — Phase 1](#features--phase-1)
+- [Features - Phase 1](#features--phase-1)
 - [Route Map](#route-map)
 - [Roles & Permissions](#roles--permissions)
 - [Database Schema](#database-schema)
@@ -34,10 +34,10 @@ The platform has four user roles:
 
 | Role | Description |
 |---|---|
-| **Admin** | Single superuser. Manages moderators, reviews lawyer applications, views all users. Created manually — cannot self-register. |
+| **Admin** | Single superuser. Manages moderators, reviews lawyer applications, views all users. Created manually - cannot self-register. |
 | **Moderator** | Created by Admin. Reviews and actions lawyer applications. Cannot create admins or change platform settings. |
 | **Lawyer** | Self-registers via email/password only. Completes a professional profile and uploads credentials for approval before gaining dashboard access. |
-| **Civilian** | Self-registers via email/password or Google OAuth. Instant access — no approval required. |
+| **Civilian** | Self-registers via email/password or Google OAuth. Instant access - no approval required. |
 
 ---
 
@@ -88,13 +88,13 @@ The platform has four user roles:
 
 **Key architectural decisions:**
 - `proxy.ts` (Next.js 16 replacement for `middleware.ts`) intercepts every request, validates the session via `supabase.auth.getUser()`, reads the authoritative role from the `profiles` table, and redirects accordingly. The JWT alone is never trusted for routing.
-- Server Actions handle all mutations — no API routes needed for data writes.
+- Server Actions handle all mutations - no API routes needed for data writes.
 - The service-role Supabase client is used in exactly three places: `auth.admin.createUser()` (create moderator), S3 file operations (private bucket), and activity logging (no guaranteed session context). Everything else uses the user's session client with RLS.
-- Documents are stored in a **private** AWS S3 bucket. Pre-signed GET URLs (1-hour expiry) are generated server-side — never exposed directly.
+- Documents are stored in a **private** AWS S3 bucket. Pre-signed GET URLs (1-hour expiry) are generated server-side - never exposed directly.
 
 ---
 
-## Features — Phase 1
+## Features - Phase 1
 
 ### Public Pages
 
@@ -102,12 +102,10 @@ The platform has four user roles:
 |---|---|---|
 | Home | `/` | Landing page with hero, stats, feature highlights, and CTAs |
 | About | `/about` | Organisation mission and values |
-| Legal Services | `/legal` | Practice areas overview — family law, criminal, civil rights, immigration |
+| Legal Services | `/legal` | Practice areas overview - family law, criminal, civil rights, immigration |
 | Resources | `/resources` | Legal guides and resource cards (content coming in future phases) |
 | Login | `/login` | Email + password for all roles. Google OAuth for civilians |
-| Sign Up (selector) | `/signup` | Role picker — civilian vs lawyer |
-| Civilian Sign Up | `/signup/civilian` | Email + password or Google OAuth. Instant access |
-| Lawyer Sign Up | `/signup/lawyer` | Email + password only (Google explicitly blocked) |
+| Sign Up | `/signup` | Single page with an inline role toggle. Civilian form (email/password or Google) and lawyer form (email/password only) on one page. `?role=civilian` / `?role=lawyer` preselects a tab |
 | Forgot Password | `/forgot-password` | Sends Supabase password reset email |
 | Reset Password | `/reset-password` | Sets new password after clicking email link |
 | Verify Email | `/verify-email` | Informational screen shown after lawyer signup |
@@ -122,8 +120,8 @@ The platform has four user roles:
 
 | Feature | URL | Description |
 |---|---|---|
-| Profile Form | `/lawyer/profile` | 16-field professional profile: full name, phone, gender, DOB, country, state, city, address, bar council number, state bar council, years of experience, qualification, practice areas, languages, law firm (optional), bio |
-| Document Upload | `/lawyer/documents` | Upload 4 required documents to private AWS S3: bar certificate, government ID, enrollment certificate, profile photo. Validates type (PDF/PNG/JPEG) and size (max 10 MB each) |
+| Onboarding (profile) | `/onboarding` | Step 1 of lawyer onboarding: the detailed professional profile (full name, phone, gender, DOB, location, bar council number + state bar council, experience, qualification, practice areas, languages, optional firm, bio) |
+| Onboarding (documents) | `/onboarding?step=documents` | Step 2: upload 4 required documents to private AWS S3 (bar certificate, government ID, enrollment certificate, profile photo). On submit, the application is set pending and a notification email is sent (stubbed in `lib/email.ts`) |
 | Pending Status | `/lawyer/status/pending` | Shown after application submission. Explains the review timeline |
 | Hold Status | `/lawyer/status/hold` | Shown when reviewer places application on hold. Displays reviewer notes |
 | Rejected Status | `/lawyer/status/rejected` | Shown when application is rejected. Displays reason and contact info |
@@ -166,8 +164,8 @@ All significant user actions are recorded to the `activity_logs` table:
 
 ### Error Handling
 
-- `app/not-found.tsx` — Custom 404 page matching the site design
-- `app/error.tsx` — Global error boundary with retry and home navigation. Shows error message in development only
+- `app/not-found.tsx` - Custom 404 page matching the site design
+- `app/error.tsx` - Global error boundary with retry and home navigation. Shows error message in development only
 
 ---
 
@@ -180,9 +178,7 @@ PUBLIC (unauthenticated)
   GET  /legal                     → Legal services overview
   GET  /resources                 → Legal resources
   GET  /login                     → Login (all roles)
-  GET  /signup                    → Role selector
-  GET  /signup/civilian           → Civilian signup
-  GET  /signup/lawyer             → Lawyer signup
+  GET  /signup                    → Signup (inline civilian/lawyer toggle; ?role= preselects)
   GET  /forgot-password           → Forgot password
   GET  /reset-password            → Reset password (token in URL)
   GET  /verify-email              → Email verification screen
@@ -191,9 +187,11 @@ PUBLIC (unauthenticated)
 CIVILIAN (role = civilian)
   GET  /dashboard                 → Civilian dashboard
 
+ONBOARDING (role = civilian or lawyer, not yet complete)
+  GET  /onboarding                → Civilian: name + purpose. Lawyer: profile step
+  GET  /onboarding?step=documents → Lawyer: document upload step
+
 LAWYER (role = lawyer)
-  GET  /lawyer/profile            → Complete professional profile
-  GET  /lawyer/documents          → Upload 4 required documents
   GET  /lawyer/status/pending     → Application pending screen
   GET  /lawyer/status/hold        → Application on hold screen
   GET  /lawyer/status/rejected    → Application rejected screen
@@ -221,7 +219,7 @@ ADMIN (role = admin)
 
 Every HTTP request passes through `proxy.ts` (Next.js 16's replacement for `middleware.ts`). The proxy:
 
-1. Validates the session with `supabase.auth.getUser()` — never trusts the JWT alone
+1. Validates the session with `supabase.auth.getUser()` - never trusts the JWT alone
 2. Reads the authoritative `role` and `is_active` from the `profiles` table
 3. Applies redirect rules:
 
@@ -268,8 +266,8 @@ The complete schema is in `supabase/schema.sql`. Apply it in **Supabase Dashboar
 
 ### Key triggers
 
-- **`handle_new_user`** — fires on every `auth.users` insert. Creates the `profiles` row automatically, reading the role from `raw_user_meta_data` (set during `supabase.auth.signUp()`). Defaults to `civilian` for OAuth signups with no role hint.
-- **`update_timestamp`** — keeps `updated_at` current on `profiles` and `lawyer_profiles`.
+- **`handle_new_user`** - fires on every `auth.users` insert. Creates the `profiles` row automatically, reading the role from `raw_user_meta_data` (set during `supabase.auth.signUp()`). Defaults to `civilian` for OAuth signups with no role hint.
+- **`update_timestamp`** - keeps `updated_at` current on `profiles` and `lawyer_profiles`.
 
 ### RLS policies
 
@@ -295,7 +293,7 @@ Documents are stored in a **private AWS S3 bucket**. No document is ever publicl
 3. Files are uploaded to S3 via `lib/storage.ts` → `uploadLawyerDocument()`
 4. The S3 **object key** (not a URL) is stored in `lawyer_documents.file_url`
 5. When a reviewer opens the review page, `getSignedUrl()` generates a temporary pre-signed GET URL (1-hour expiry) for each document
-6. The signed URL is rendered as a "View" link — it expires and is never stored
+6. The signed URL is rendered as a "View" link - it expires and is never stored
 
 ### Validation
 
@@ -339,9 +337,9 @@ e.g. a1b2c3d4/bar_certificate-1718000000000.pdf
   → supabase.auth.signUp({ data: { role: 'lawyer' }, emailRedirectTo: '/auth/callback' })
   → email verification sent → /verify-email
   → lawyer clicks email link → /auth/callback
-  → no lawyer_profile yet → /lawyer/profile
-  → completes profile → /lawyer/documents
-  → uploads 4 documents → /lawyer/status/pending
+  → no lawyer_profile yet → /onboarding
+  → completes profile → /onboarding?step=documents
+  → uploads 4 documents → /lawyer/status/pending (notification email sent - stubbed)
   → admin/moderator reviews → approved / hold / rejected
   → if approved → /lawyer/dashboard
 ```
@@ -453,7 +451,7 @@ d:\Projects\dia\
 │   ├── auth/
 │   │   └── session.ts              # getServerSession(), getLawyerApplicationStatus()
 │   ├── storage.ts                  # uploadLawyerDocument, getSignedUrl, deleteLawyerDocument (AWS S3)
-│   ├── activity-log.ts             # logActivity() — writes to activity_logs
+│   ├── activity-log.ts             # logActivity() - writes to activity_logs
 │   └── utils.ts                    # cn(), formatDistanceToNow()
 │
 ├── types/
@@ -478,12 +476,12 @@ d:\Projects\dia\
 Create `.env.local` in the project root:
 
 ```bash
-# Supabase — Authentication and Database
+# Supabase - Authentication and Database
 # Found in: Supabase Dashboard → Settings → API
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 
-# Service role key — SERVER SIDE ONLY. Never expose to the browser.
+# Service role key - SERVER SIDE ONLY. Never expose to the browser.
 # Found in: Supabase Dashboard → Settings → API → service_role key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
@@ -493,7 +491,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 # Production:  https://your-domain.com
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# AWS S3 — Document Storage (private bucket)
+# AWS S3 - Document Storage (private bucket)
 # The IAM user needs: s3:PutObject, s3:GetObject, s3:DeleteObject on this bucket
 AWS_REGION=us-east-1
 AWS_S3_BUCKET=your-bucket-name
@@ -558,12 +556,12 @@ This creates all tables, enums, indexes, triggers, functions, and RLS policies.
 
 The admin cannot self-register. Create it manually:
 
-**Step 1** — Create the auth user:
+**Step 1** - Create the auth user:
 - Go to **Authentication → Users → Add User**
 - Enter the admin email and a strong password
 - Tick **Auto Confirm User**
 
-**Step 2** — Update their role (the trigger defaults to `civilian`):
+**Step 2** - Update their role (the trigger defaults to `civilian`):
 
 ```sql
 UPDATE public.profiles
@@ -571,7 +569,7 @@ SET role = 'admin'
 WHERE email = 'admin@yourdomain.com';
 ```
 
-**Step 3** — Insert the admin_profiles row:
+**Step 3** - Insert the admin_profiles row:
 
 ```sql
 INSERT INTO public.admin_profiles (user_id)
@@ -591,7 +589,7 @@ Go to **Authentication → Email Templates** to customise the verification and p
 
 1. Open **AWS S3 → Create bucket**
 2. Choose a name (set it as `AWS_S3_BUCKET` in `.env.local`)
-3. **Block all public access: ON** — the bucket must be private
+3. **Block all public access: ON** - the bucket must be private
 4. Enable server-side encryption (AES-256 recommended)
 
 ### 2. Create an IAM user
@@ -656,11 +654,11 @@ pnpm lint
 
 | Concern | Approach |
 |---|---|
-| Role spoofing | Role read from `profiles` table on every request and every Server Action — never from JWT claims |
+| Role spoofing | Role read from `profiles` table on every request and every Server Action - never from JWT claims |
 | Unauthenticated access | `proxy.ts` redirects all non-public routes to `/login` |
 | Cross-role access | `proxy.ts` + per-action `getServerSession()` checks prevent any role from accessing another role's routes or data |
 | Inactive accounts | `is_active = false` → forced to `/login` in proxy and blocked in all Server Actions |
-| Document exposure | Documents stored in a private S3 bucket. Only pre-signed URLs (1-hour expiry) are served — raw keys are never sent to clients |
+| Document exposure | Documents stored in a private S3 bucket. Only pre-signed URLs (1-hour expiry) are served - raw keys are never sent to clients |
 | RLS | Row-Level Security enabled on all 6 Supabase tables. The anon key and session key both respect RLS |
 | Service-role key | Used only in 3 places: `supabase.auth.admin.createUser()`, S3 file operations, and activity logging. Never imported in Client Components or exposed to the browser |
 | CSRF | Handled automatically by Next.js Server Actions (Origin header check) |
@@ -690,4 +688,43 @@ The following features are **out of scope for Phase 1** and not implemented:
 
 ## License
 
-Private project — Digital Inclusive Aid. All rights reserved.
+Private project - Digital Inclusive Aid. All rights reserved.
+
+---
+
+## Content & Stats to Confirm
+
+The public marketing pages were intentionally written with **honest, verifiable claims** instead of invented metrics. As the platform grows and you have real data, drop the confirmed values here and wire them into the pages listed below.
+
+> Rule of thumb: never publish a number we can't back up. An empty or honest claim builds more trust than a fabricated statistic.
+
+### Homepage - trust strip (`app/(public)/page.tsx`)
+
+Currently uses honest, non-numeric claims (e.g. "Every lawyer is Bar Council verified", "Free to request help", "Confidential by design"). Replace with real figures once available:
+
+| Placeholder claim | Real value (fill in) | Source of truth |
+|---|---|---|
+| Support requests handled | `TBD` | count from `activity_logs` / cases table |
+| Verified legal professionals | `TBD` | count of `lawyer_profiles` where `application_status = 'approved'` |
+| Average time to first response | `TBD` | measured once live |
+| Resolution / success rate | `TBD` | measured once live |
+
+### Homepage - testimonial / impact story
+
+The invented "Anonymized Platform User" quote and fake case IDs were removed. When you have **real, consented** testimonials:
+- Store the quote, first name (or "Anonymous, City"), and case type.
+- Only publish with explicit written consent; anonymise anything identifying.
+
+### Verified professional example card
+
+The fake "Adv. Sarah Jenkins / Bar #SJ-89244" profile was replaced with a clearly-labeled *illustrative* example. If you want a real featured lawyer, get consent and swap in real details.
+
+### Resources / Knowledge Hub (`app/(public)/resources/page.tsx`)
+
+Article counts, "updated X days ago" timestamps, and the non-functional search were removed. When real guides exist:
+- List actual published guides with real titles and dates.
+- Wire the search box to a real query (or keep it hidden until then).
+
+### Jurisdiction note
+
+Copy currently assumes an **India** context (Bar Council of India verification, Indian practice areas), consistent with the `lawyer_profiles` schema (bar council number, state bar council). Update if the target jurisdiction differs.

@@ -15,8 +15,10 @@ import { FormAlert } from '@/components/auth/FormAlert'
 import { FieldError } from '@/components/auth/FieldError'
 import { SubmitButton } from '@/components/auth/SubmitButton'
 import { saveLawyerProfile } from '@/features/lawyer/actions'
+import { PhoneField } from '@/components/onboarding/PhoneField'
+import { CountrySelect } from '@/components/onboarding/CountrySelect'
 import type { ActionState } from '@/features/auth/actions'
-import type { LawyerProfileRow } from '@/types/database'
+import type { LawyerProfileRow, CountryRow } from '@/types/database'
 
 const PRACTICE_AREAS = [
   'Criminal Law', 'Family Law', 'Corporate Law', 'Civil Rights',
@@ -31,11 +33,16 @@ const LANGUAGES = [
 interface LawyerProfileFormProps {
   existing: LawyerProfileRow | null
   userEmail: string
+  countries: CountryRow[]
 }
 
 const initialState: ActionState = {}
 
-export function LawyerProfileForm({ existing, userEmail }: LawyerProfileFormProps) {
+export function LawyerProfileForm({
+  existing,
+  userEmail,
+  countries,
+}: LawyerProfileFormProps) {
   const [state, formAction] = useActionState(saveLawyerProfile, initialState)
 
   return (
@@ -62,17 +69,11 @@ export function LawyerProfileForm({ existing, userEmail }: LawyerProfileFormProp
               <FieldError errors={state.fieldErrors?.full_name} />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="+1 234 567 8900"
-                required
-              />
-              <FieldError errors={state.fieldErrors?.phone} />
-            </div>
+            <PhoneField
+              countries={countries}
+              errors={state.fieldErrors?.phone}
+              required
+            />
 
             <div className="space-y-1.5">
               <Label htmlFor="gender">Gender</Label>
@@ -104,11 +105,10 @@ export function LawyerProfileForm({ existing, userEmail }: LawyerProfileFormProp
             Location
           </legend>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" placeholder="Country" required />
-              <FieldError errors={state.fieldErrors?.country} />
-            </div>
+            <CountrySelect
+              countries={countries}
+              errors={state.fieldErrors?.country}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="state">State / Province</Label>
               <Input id="state" name="state" placeholder="State" required />
@@ -186,7 +186,7 @@ export function LawyerProfileForm({ existing, userEmail }: LawyerProfileFormProp
             </div>
           </div>
 
-          {/* Practice areas — multi-select via checkboxes */}
+          {/* Practice areas - multi-select via checkboxes */}
           <div className="space-y-2">
             <Label>Practice areas</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

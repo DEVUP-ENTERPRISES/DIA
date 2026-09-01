@@ -5,12 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity-log'
 import {
   loginSchema,
-  civilianSignupSchema,
-  lawyerSignupSchema,
+  signupSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from './schemas'
-import type { ApplicationStatus } from '@/types/auth'
+import type { UserRole, ApplicationStatus } from '@/types/auth'
 
 // ---------------------------------------------------------------------------
 // Shared action state type
@@ -22,8 +21,60 @@ export type ActionState = {
   fieldErrors?: Record<string, string[]>
 }
 
+// Roles a user is allowed to self-select at signup. Admin/moderator are created
+// separately and can never be chosen here.
+const SELF_SIGNUP_ROLES: readonly UserRole[] = ['civilian', 'lawyer']
+
+function normalizeSignupRole(value: FormDataEntryValue | null): UserRole {
+  return value === 'lawyer' ? 'lawyer' : 'civilian'
+}
+
 // ---------------------------------------------------------------------------
-// Login (all roles — email + password)
+// Post-auth routing - shared by login and the OAuth/email callback logic.
+// Returns the path a user should land on based on role + onboarding state.
+// ---------------------------------------------------------------------------
+
+async function resolvePostAuthPath(userId: string): Promise<string> {
+  const supabase = await createClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, purpose')
+    .eq('id', userId)
+    .single()
+
+  const role = profile?.role as UserRole | undefined
+
+  if (role === 'admin') return '/admin/dashboard'
+  if (role === 'moderator') return '/moderator/dashboard'
+
+  if (role === 'civilian') {
+    // Civilian onboarding is complete once they've told us their purpose.
+    return profile?.purpose ? '/dashboard' : '/onboarding'
+  }
+
+  if (role === 'lawyer') {
+    const { data: lp } = await supabase
+      .from('lawyer_profiles')
+      .select('application_status')
+      .eq('user_id', userId)
+      .single()
+
+    // No lawyer profile yet → still needs to complete onboarding.
+    if (!lp) return '/onboarding'
+
+    const status = lp.application_status as ApplicationStatus
+    if (status === 'approved') return '/lawyer/dashboard'
+    if (status === 'hold') return '/lawyer/status/hold'
+    if (status === 'rejected') return '/lawyer/status/rejected'
+    return '/lawyer/status/pending'
+  }
+
+  return '/login'
+}
+
+// ---------------------------------------------------------------------------
+// Login (all roles - email + password)
 // ---------------------------------------------------------------------------
 
 export async function login(
@@ -49,10 +100,9 @@ export async function login(
     return { error: 'Invalid email or password.' }
   }
 
-  // Fetch authoritative role from profiles table (never trust JWT metadata alone).
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, is_active')
+    .select('is_active')
     .eq('id', data.user.id)
     .single()
 
@@ -65,44 +115,22 @@ export async function login(
     return { error: 'Your account has been deactivated.' }
   }
 
-  // Fire-and-forget activity log.
   logActivity({ actor: data.user.id, action: 'user_login' })
 
-  // Redirect based on role.
-  const role = profile.role
-  if (role === 'admin') redirect('/admin/dashboard')
-  if (role === 'moderator') redirect('/moderator/dashboard')
-  if (role === 'civilian') redirect('/dashboard')
-
-  // Lawyer — check application status.
-  if (role === 'lawyer') {
-    const { data: lp } = await supabase
-      .from('lawyer_profiles')
-      .select('application_status, bar_council_number, bio')
-      .eq('user_id', data.user.id)
-      .single()
-
-    if (!lp) redirect('/lawyer/profile')
-
-    const status = lp.application_status as ApplicationStatus
-    if (status === 'approved') redirect('/lawyer/dashboard')
-    if (status === 'hold') redirect('/lawyer/status/hold')
-    if (status === 'rejected') redirect('/lawyer/status/rejected')
-    redirect('/lawyer/status/pending')
-  }
-
-  redirect('/login')
+  redirect(await resolvePostAuthPath(data.user.id))
 }
 
 // ---------------------------------------------------------------------------
-// Civilian signup
+// Signup (civilian or lawyer) - email + password
 // ---------------------------------------------------------------------------
 
-export async function civilianSignup(
+export async function signup(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = civilianSignupSchema.safeParse({
+  const role = normalizeSignupRole(formData.get('role'))
+
+  const parsed = signupSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
     confirm_password: formData.get('confirm_password'),
@@ -117,62 +145,8 @@ export async function civilianSignup(
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      // The handle_new_user DB trigger reads this to set role = 'civilian'.
-      data: { role: 'civilian' },
-    },
-  })
-
-  if (error) {
-    if (error.message.toLowerCase().includes('already registered')) {
-      return { error: 'An account with this email already exists.' }
-    }
-    return { error: error.message }
-  }
-
-  if (data.user) {
-    logActivity({
-      actor: data.user.id,
-      action: 'user_login',
-      metadata: { event: 'signup' },
-    })
-  }
-
-  // Supabase may auto-confirm or require email verification depending on project config.
-  // If session exists, the user is auto-confirmed → redirect to dashboard.
-  if (data.session) {
-    redirect('/dashboard')
-  }
-
-  // Otherwise, direct them to verify email.
-  redirect('/verify-email')
-}
-
-// ---------------------------------------------------------------------------
-// Lawyer signup
-// ---------------------------------------------------------------------------
-
-export async function lawyerSignup(
-  _prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = lawyerSignupSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-    confirm_password: formData.get('confirm_password'),
-  })
-
-  if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors }
-  }
-
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      // The handle_new_user DB trigger reads this to set role = 'lawyer'.
-      data: { role: 'lawyer' },
-      // After email verification, redirect back to the app.
+      // The handle_new_user DB trigger reads this to set the profile role.
+      data: { role },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/callback`,
     },
   })
@@ -187,12 +161,17 @@ export async function lawyerSignup(
   if (data.user) {
     logActivity({
       actor: data.user.id,
-      action: 'lawyer_registered',
-      metadata: { email: parsed.data.email },
+      action: role === 'lawyer' ? 'lawyer_registered' : 'user_login',
+      metadata: { event: 'signup', role },
     })
   }
 
-  // Lawyers must verify email before proceeding.
+  // If the session exists, the account was auto-confirmed → go straight to
+  // onboarding. Otherwise the user must verify their email first.
+  if (data.session) {
+    redirect('/onboarding')
+  }
+
   redirect('/verify-email')
 }
 
@@ -234,7 +213,6 @@ export async function forgotPassword(
     return { error: error.message }
   }
 
-  // Return success without redirecting — the page shows a confirmation message.
   return {
     success:
       'If an account with that email exists, a reset link has been sent.',
@@ -273,20 +251,33 @@ export async function resetPassword(
 }
 
 // ---------------------------------------------------------------------------
-// Google OAuth (civilian only)
+// Google OAuth (civilian or lawyer)
+// ---------------------------------------------------------------------------
+// Supabase can't set user_metadata.role before the OAuth account is created,
+// so the handle_new_user trigger defaults OAuth signups to 'civilian'. To
+// support "sign up as a lawyer with Google", we pass the intended role through
+// the callback URL; the callback promotes a brand-new civilian profile to
+// 'lawyer' when that intent is present.
 // ---------------------------------------------------------------------------
 
-export async function signInWithGoogle(): Promise<ActionState> {
+export async function signInWithGoogle(role?: UserRole): Promise<ActionState> {
   const supabase = await createClient()
+
+  const intendedRole: UserRole =
+    role && SELF_SIGNUP_ROLES.includes(role) ? role : 'civilian'
+
+  const callbackUrl = new URL(
+    '/auth/callback',
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  )
+  if (intendedRole === 'lawyer') {
+    callbackUrl.searchParams.set('intended_role', 'lawyer')
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/callback`,
-      queryParams: {
-        // Pass role hint — the DB trigger will read raw_user_meta_data.role.
-        // For OAuth signups the trigger defaults to 'civilian' if not set.
-      },
+      redirectTo: callbackUrl.toString(),
     },
   })
 

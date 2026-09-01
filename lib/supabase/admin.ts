@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 /**
  * Service-role Supabase client.
- * Bypasses RLS — use ONLY in Server Actions / Route Handlers for operations
+ * Bypasses RLS - use ONLY in Server Actions / Route Handlers for operations
  * that legitimately require elevated access (e.g., creating a moderator,
  * reading all lawyer profiles for admin review, writing activity logs).
  *

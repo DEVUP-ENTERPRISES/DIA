@@ -64,10 +64,10 @@ export default async function AdminModeratorsPage() {
                 return (
                   <TableRow key={mod.id}>
                     <TableCell className="font-medium">
-                      {profile?.full_name ?? '—'}
+                      {profile?.full_name ?? '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {profile?.email ?? '—'}
+                      {profile?.email ?? '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDistanceToNow(new Date(mod.created_at))} ago

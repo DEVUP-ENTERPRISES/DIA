@@ -1,7 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 
-/** All users across all roles — for admin users page. */
+/** All users across all roles - for admin users page. */
 export async function getAllUsers() {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -13,7 +13,7 @@ export async function getAllUsers() {
   return data
 }
 
-/** All lawyer applications regardless of status — for admin lawyers page. */
+/** All lawyer applications regardless of status - for admin lawyers page. */
 export async function getAllLawyerApplications() {
   const supabase = await createClient()
   const { data, error } = await supabase

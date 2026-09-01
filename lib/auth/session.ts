@@ -22,7 +22,7 @@ export async function getServerSession(): Promise<UserSession | null> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'id, email, role, full_name, phone, avatar_url, is_active, email_verified',
+      'id, email, role, full_name, phone, avatar_url, purpose, is_active, email_verified',
     )
     .eq('id', user.id)
     .single()

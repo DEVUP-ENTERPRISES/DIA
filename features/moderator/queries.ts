@@ -1,7 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 
-/** Lawyer applications pending review — for moderator list page. */
+/** Lawyer applications pending review - for moderator list page. */
 export async function getPendingApplications() {
   const supabase = await createClient()
   const { data, error } = await supabase

@@ -4,16 +4,23 @@ import { Button } from '@/components/ui/button'
 import { signInWithGoogle } from '@/features/auth/actions'
 import { Loader2 } from 'lucide-react'
 import { useTransition } from 'react'
+import type { UserRole } from '@/types/auth'
+
+interface OAuthButtonProps {
+  /** Intended role for a Google signup. Defaults to civilian. */
+  role?: Extract<UserRole, 'civilian' | 'lawyer'>
+}
 
 /**
- * Google OAuth sign-in button. Civilian-only — never render on lawyer pages.
+ * Google OAuth sign-in button. Works for both civilian and lawyer signup -
+ * pass `role="lawyer"` on the lawyer tab so the account is created as a lawyer.
  */
-export function OAuthButton() {
+export function OAuthButton({ role = 'civilian' }: OAuthButtonProps) {
   const [isPending, startTransition] = useTransition()
 
   function handleClick() {
     startTransition(async () => {
-      await signInWithGoogle()
+      await signInWithGoogle(role)
     })
   }
 
@@ -29,7 +36,7 @@ export function OAuthButton() {
       {isPending ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
       ) : (
-        // Simple inline Google "G" SVG — no external icon library needed.
+        // Simple inline Google "G" SVG - no external icon library needed.
         <svg
           className="mr-2 h-4 w-4"
           viewBox="0 0 24 24"

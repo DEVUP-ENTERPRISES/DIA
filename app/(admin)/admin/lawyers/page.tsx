@@ -61,10 +61,10 @@ export default async function AdminLawyersPage() {
                 return (
                   <TableRow key={app.id}>
                     <TableCell className="font-medium">
-                      {profile?.full_name ?? '—'}
+                      {profile?.full_name ?? '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {profile?.email ?? '—'}
+                      {profile?.email ?? '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDistanceToNow(

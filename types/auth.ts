@@ -1,5 +1,5 @@
 // Mirrors the PostgreSQL enums defined in the Supabase schema.
-// Never derive role from JWT claims alone — always validate server-side.
+// Never derive role from JWT claims alone - always validate server-side.
 
 export type UserRole = 'admin' | 'moderator' | 'lawyer' | 'civilian'
 
@@ -26,6 +26,7 @@ export interface UserSession {
   full_name: string | null
   phone: string | null
   avatar_url: string | null
+  purpose: string | null
   is_active: boolean
   email_verified: boolean
 }

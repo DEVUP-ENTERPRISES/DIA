@@ -51,7 +51,7 @@ export default async function AdminUsersPage() {
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
-                  {user.full_name ?? '—'}
+                  {user.full_name ?? '-'}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {user.email}

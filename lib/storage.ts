@@ -17,7 +17,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024   // 10 MB
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg']
 const SIGNED_URL_EXPIRY_SECONDS = 60 * 60       // 1 hour
 
-// S3Client is safe to instantiate at module level — it is stateless and
+// S3Client is safe to instantiate at module level - it is stateless and
 // reused across requests (Next.js module cache).
 const s3 = new S3Client({
   region: REGION,
@@ -86,7 +86,7 @@ export async function uploadLawyerDocument(
         Key: key,
         Body: body,
         ContentType: file.type,
-        // Server-side encryption — enabled by default on most AWS accounts.
+        // Server-side encryption - enabled by default on most AWS accounts.
         // Remove if your bucket policy enforces a different encryption mode.
         ServerSideEncryption: 'AES256',
       }),

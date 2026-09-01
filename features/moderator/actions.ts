@@ -10,7 +10,7 @@ import type { ActivityAction } from '@/lib/activity-log'
 
 // ---------------------------------------------------------------------------
 // Review a lawyer application (approve / hold / reject)
-// Shared by both moderator and admin — authorisation checked here.
+// Shared by both moderator and admin - authorisation checked here.
 // ---------------------------------------------------------------------------
 
 export async function reviewApplication(

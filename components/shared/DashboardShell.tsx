@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Scale } from 'lucide-react'
+import Image from 'next/image'
 import { LogoutButton } from './LogoutButton'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import type { UserRole } from '@/types/auth'
 
 interface NavItem {
@@ -46,7 +47,14 @@ export function DashboardShell({ role, fullName, children }: DashboardShellProps
             href="/"
             className="flex items-center gap-2 font-semibold text-foreground shrink-0"
           >
-            <Scale className="h-4 w-4 text-primary" aria-hidden="true" />
+            <Image
+              src="/logo/dia_logo.png"
+              alt="DIA logo"
+              width={72}
+              height={72}
+              quality={100}
+              className="h-6 w-6 object-contain"
+            />
             <span>DIA</span>
           </Link>
 
@@ -70,6 +78,7 @@ export function DashboardShell({ role, fullName, children }: DashboardShellProps
                 {fullName}
               </span>
             )}
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </div>

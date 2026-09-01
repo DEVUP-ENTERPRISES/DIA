@@ -13,6 +13,11 @@ export default async function CivilianLayout({
     redirect('/login')
   }
 
+  // Civilians must finish onboarding (name + purpose) before the dashboard.
+  if (!session.purpose) {
+    redirect('/onboarding')
+  }
+
   return (
     <DashboardShell role="civilian" fullName={session.full_name}>
       {children}

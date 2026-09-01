@@ -49,7 +49,7 @@ export function ReviewPanel({ lawyerProfileId, currentStatus }: ReviewPanelProps
           />
         </div>
 
-        {/* Action buttons — each sets a hidden action value via formAction override */}
+        {/* Action buttons - each sets a hidden action value via formAction override */}
         <div className="flex flex-wrap gap-3">
           <ActionButton
             formAction={formAction}
@@ -78,7 +78,7 @@ export function ReviewPanel({ lawyerProfileId, currentStatus }: ReviewPanelProps
   )
 }
 
-// Individual action button — includes a hidden `action` input so the server
+// Individual action button - includes a hidden `action` input so the server
 // knows which decision was made when clicked.
 function ActionButton({
   formAction,

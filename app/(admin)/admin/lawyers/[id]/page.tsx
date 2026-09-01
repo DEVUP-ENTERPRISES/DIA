@@ -132,7 +132,7 @@ function Detail({ label, value }: { label: string; value: string | number | null
   return (
     <div className="space-y-0.5">
       <p className="text-muted-foreground font-medium">{label}</p>
-      <p className="text-foreground">{value ?? '—'}</p>
+      <p className="text-foreground">{value ?? '-'}</p>
     </div>
   )
 }

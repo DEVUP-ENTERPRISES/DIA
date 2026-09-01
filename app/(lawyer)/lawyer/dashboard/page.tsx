@@ -34,7 +34,7 @@ export default async function LawyerDashboardPage() {
             <ShieldCheck className="w-5 h-5 text-green-600" aria-label="Verified Profile" />
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Bar Council No: {profile.bar_council_number ?? '—'} •{' '}
+            Bar Council No: {profile.bar_council_number ?? '-'} •{' '}
             {profile.practice_areas?.join(', ') ?? 'General Practice'}
           </p>
         </div>
@@ -47,13 +47,13 @@ export default async function LawyerDashboardPage() {
         </div>
       </div>
 
-      {/* Case Overview Metrics — placeholder data for Phase 1 */}
+      {/* Case Overview Metrics - placeholder data for Phase 1 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Active Cases', value: '—' },
-          { label: 'Pending Requests', value: '—' },
-          { label: 'Unread Messages', value: '—' },
-          { label: 'Resolved (YTD)', value: '—' },
+          { label: 'Active Cases', value: '-' },
+          { label: 'Pending Requests', value: '-' },
+          { label: 'Unread Messages', value: '-' },
+          { label: 'Resolved (YTD)', value: '-' },
         ].map(({ label, value }) => (
           <div key={label} className="bg-background border rounded-lg p-5 shadow-sm">
             <div className="text-sm font-medium text-muted-foreground mb-1">{label}</div>

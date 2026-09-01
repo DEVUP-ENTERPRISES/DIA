@@ -5,6 +5,7 @@ import { getServerSession } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { uploadLawyerDocument } from '@/lib/storage'
 import { logActivity } from '@/lib/activity-log'
+import { sendLawyerApplicationReceivedEmail } from '@/lib/email'
 import { lawyerProfileSchema } from './schemas'
 import type { ActionState } from '@/features/auth/actions'
 import type { DocumentType } from '@/types/auth'
@@ -94,7 +95,8 @@ export async function saveLawyerProfile(
     metadata: { role: 'lawyer' },
   })
 
-  redirect('/lawyer/documents')
+  // Continue to the documents step of onboarding.
+  redirect('/onboarding?step=documents')
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +143,7 @@ export async function uploadLawyerDocuments(
     try {
       const storagePath = await uploadLawyerDocument(session.id, docType, file)
 
-      // Upsert the document record — overwrite if previously uploaded.
+      // Upsert the document record - overwrite if previously uploaded.
       await supabase.from('lawyer_documents').upsert(
         {
           lawyer_id: lp.id,
@@ -169,6 +171,10 @@ export async function uploadLawyerDocuments(
   if (errors.length > 0) {
     return { error: errors.join(' ') }
   }
+
+  // Application is now complete and pending review. Notify the lawyer.
+  // (Email is a stub until a real provider is wired up - see lib/email.ts.)
+  await sendLawyerApplicationReceivedEmail(session.email, session.full_name)
 
   redirect('/lawyer/status/pending')
 }

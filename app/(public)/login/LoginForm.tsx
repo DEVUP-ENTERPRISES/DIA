@@ -62,7 +62,7 @@ export function LoginForm() {
         </SubmitButton>
       </form>
 
-      {/* Google OAuth — civilian path only */}
+      {/* Google OAuth - civilian path only */}
       <div className="relative">
         <Separator />
         <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
@@ -77,7 +77,7 @@ export function LoginForm() {
       <p className="text-center text-xs text-muted-foreground">
         Are you a lawyer?{' '}
         <Link
-          href="/signup/lawyer"
+          href="/signup?role=lawyer"
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           Apply here

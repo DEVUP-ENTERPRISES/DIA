@@ -34,7 +34,7 @@ export async function getLawyerDocuments(
 
 /**
  * Returns documents with signed URLs for the current lawyer.
- * Admin client is used to bypass RLS — the signed URL is ephemeral (1 hour).
+ * Admin client is used to bypass RLS - the signed URL is ephemeral (1 hour).
  */
 export async function getLawyerDocumentsWithUrls(lawyerProfileId: string) {
   const docs = await getLawyerDocuments(lawyerProfileId)

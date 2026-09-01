@@ -34,6 +34,8 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-amber-foreground: var(--accent-amber-foreground);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -56,6 +58,9 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.38 0.15 300);
   --primary-foreground: oklch(0.985 0 0);
+  /* Secondary brand accent - warm amber/ochre ("verified seal"). Used sparingly. */
+  --accent-amber: oklch(0.7 0.15 65);
+  --accent-amber-foreground: oklch(0.28 0.06 60);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
@@ -83,18 +88,23 @@
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.38 0.15 300);
-  --primary-foreground: oklch(0.985 0 0);
+  --background: oklch(0.17 0.008 285.823);
+  --foreground: oklch(0.97 0.004 286);
+  /* Card slightly lighter than the background so bordered cards read. */
+  --card: oklch(0.213 0.008 286);
+  --card-foreground: oklch(0.97 0.004 286);
+  --popover: oklch(0.213 0.008 286);
+  --popover-foreground: oklch(0.97 0.004 286);
+  /* Brighter purple on dark so it stays legible/vivid. */
+  --primary: oklch(0.62 0.17 300);
+  --primary-foreground: oklch(0.145 0.02 300);
+  /* Warmer, brighter amber on dark. */
+  --accent-amber: oklch(0.78 0.14 70);
+  --accent-amber-foreground: oklch(0.2 0.04 60);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
+  --muted-foreground: oklch(0.72 0.015 286.067);
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
@@ -125,5 +135,15 @@
   }
   html {
     @apply font-sans;
+    /* Offset anchor targets so they don't hide behind the sticky header. */
+    scroll-padding-top: 5rem;
+  }
+
+  /* Smooth scrolling is handled by Lenis (components/public/SmoothScroll).
+     Fall back to native smooth anchor scrolling when motion is reduced. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 }

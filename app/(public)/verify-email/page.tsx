@@ -34,7 +34,7 @@ export default function VerifyEmailPage() {
           <ul className="list-disc list-inside space-y-1">
             <li>Check your spam or junk folder.</li>
             <li>Make sure you entered the correct email address.</li>
-            <li>Wait a few minutes — sometimes it takes a moment.</li>
+            <li>Wait a few minutes - sometimes it takes a moment.</li>
           </ul>
         </div>
 

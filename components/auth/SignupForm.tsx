@@ -8,18 +8,28 @@ import { FormAlert } from '@/components/auth/FormAlert'
 import { FieldError } from '@/components/auth/FieldError'
 import { SubmitButton } from '@/components/auth/SubmitButton'
 import { OAuthButton } from '@/components/auth/OAuthButton'
-import { civilianSignup, type ActionState } from '@/features/auth/actions'
+import { signup, type ActionState } from '@/features/auth/actions'
 
 const initialState: ActionState = {}
 
-export function CivilianSignupForm() {
-  const [state, formAction] = useActionState(civilianSignup, initialState)
+interface SignupFormProps {
+  role: 'civilian' | 'lawyer'
+}
+
+/**
+ * Shared signup form for both roles. The role is submitted via a hidden field
+ * and also used to label the Google button so OAuth signups get the right role.
+ */
+export function SignupForm({ role }: SignupFormProps) {
+  const [state, formAction] = useActionState(signup, initialState)
 
   return (
     <div className="space-y-4">
       <FormAlert error={state.error} />
 
       <form action={formAction} className="space-y-4" noValidate>
+        <input type="hidden" name="role" value={role} />
+
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -27,7 +37,7 @@ export function CivilianSignupForm() {
             name="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={role === 'lawyer' ? 'you@lawfirm.com' : 'you@example.com'}
             required
           />
           <FieldError errors={state.fieldErrors?.email} />
@@ -67,13 +77,11 @@ export function CivilianSignupForm() {
       <div className="relative">
         <Separator />
         <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-          <span className="bg-background px-2 text-xs text-muted-foreground">
-            or
-          </span>
+          <span className="bg-card px-2 text-xs text-muted-foreground">or</span>
         </span>
       </div>
 
-      <OAuthButton />
+      <OAuthButton role={role} />
     </div>
   )
 }

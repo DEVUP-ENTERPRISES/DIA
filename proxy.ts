@@ -14,8 +14,6 @@ const PUBLIC_PATHS = [
   '/resources',
   '/login',
   '/signup',
-  '/signup/civilian',
-  '/signup/lawyer',
   '/forgot-password',
   '/reset-password',
   '/verify-email',
@@ -40,12 +38,8 @@ function isPublicPath(pathname: string) {
   )
 }
 
-function startsWithAny(pathname: string, prefixes: string[]) {
-  return prefixes.some((p) => pathname.startsWith(p))
-}
-
 // ---------------------------------------------------------------------------
-// Proxy function (Next.js 16 — replaces middleware.ts)
+// Proxy function (Next.js 16 - replaces middleware.ts)
 // ---------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
@@ -79,7 +73,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // ------------------------------------------------------------------
-  // 1. Unauthenticated — only allow public paths.
+  // 1. Unauthenticated - only allow public paths.
   // ------------------------------------------------------------------
   if (!user) {
     if (isPublicPath(pathname)) return response
@@ -118,13 +112,23 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
 
     if (role === 'lawyer') {
-      // Lawyer's home depends on application status — resolved below.
+      // Lawyer's home depends on onboarding + application status.
       const { data: lp } = await supabase
         .from('lawyer_profiles')
-        .select('application_status')
+        .select('application_status, bar_council_number, bio')
         .eq('user_id', user.id)
         .single()
-      url.pathname = lawyerHome(lp?.application_status)
+      const complete = !!(lp?.bar_council_number && lp?.bio)
+      url.pathname = !lp || !complete
+        ? '/onboarding'
+        : lawyerHome(lp.application_status)
+    } else if (role === 'civilian') {
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('purpose')
+        .eq('id', user.id)
+        .single()
+      url.pathname = p?.purpose ? '/dashboard' : '/onboarding'
     } else {
       url.pathname = ROLE_HOME[role ?? 'civilian']
     }
@@ -151,6 +155,29 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
+  // --- Onboarding ---
+  // Only civilians and lawyers who haven't finished onboarding belong here.
+  if (pathname.startsWith('/onboarding')) {
+    if (role === 'admin' || role === 'moderator') {
+      return redirectToRoleHome(request, role, user.id, supabase)
+    }
+
+    if (role === 'civilian') {
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('purpose')
+        .eq('id', user.id)
+        .single()
+      if (p?.purpose) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
+    }
+    // Lawyers may stay on /onboarding; the page routes them out once done.
+    return response
+  }
+
   // --- Lawyer routes ---
   if (pathname.startsWith('/lawyer')) {
     if (role !== 'lawyer') {
@@ -166,51 +193,24 @@ export async function proxy(request: NextRequest) {
     const status = lp?.application_status as ApplicationStatus | undefined
     const profileComplete = !!(lp?.bar_council_number && lp?.bio)
 
-    // Protect /lawyer/dashboard — only approved lawyers.
+    // No profile or incomplete profile → onboarding.
+    if (!lp || !profileComplete) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+
+    // Only approved lawyers can reach the dashboard.
     if (pathname.startsWith('/lawyer/dashboard') && status !== 'approved') {
       const url = request.nextUrl.clone()
       url.pathname = lawyerHome(status)
       return NextResponse.redirect(url)
     }
 
-    // Redirect approved lawyers away from status pages / onboarding.
-    if (
-      status === 'approved' &&
-      (pathname.startsWith('/lawyer/status') ||
-        pathname.startsWith('/lawyer/profile') ||
-        pathname.startsWith('/lawyer/documents'))
-    ) {
+    // Approved lawyers shouldn't sit on status pages.
+    if (status === 'approved' && pathname.startsWith('/lawyer/status')) {
       const url = request.nextUrl.clone()
       url.pathname = '/lawyer/dashboard'
-      return NextResponse.redirect(url)
-    }
-
-    // Pending/hold/rejected: only allow status pages.
-    if (
-      status &&
-      status !== 'approved' &&
-      pathname.startsWith('/lawyer/dashboard')
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = lawyerHome(status)
-      return NextResponse.redirect(url)
-    }
-
-    // If no lawyer profile yet, redirect to profile creation.
-    if (!lp && !pathname.startsWith('/lawyer/profile')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/lawyer/profile'
-      return NextResponse.redirect(url)
-    }
-
-    // Profile complete but no status page submission yet: go to documents.
-    if (
-      lp &&
-      !profileComplete &&
-      !startsWithAny(pathname, ['/lawyer/profile'])
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/lawyer/profile'
       return NextResponse.redirect(url)
     }
 
@@ -222,6 +222,19 @@ export async function proxy(request: NextRequest) {
     if (role !== 'civilian') {
       return redirectToRoleHome(request, role, user.id, supabase)
     }
+
+    // Civilians must finish onboarding first.
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('purpose')
+      .eq('id', user.id)
+      .single()
+    if (!p?.purpose) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+
     return response
   }
 
@@ -256,10 +269,19 @@ async function redirectToRoleHome(
   if (role === 'lawyer') {
     const { data: lp } = await supabase
       .from('lawyer_profiles')
-      .select('application_status')
+      .select('application_status, bar_council_number, bio')
       .eq('user_id', userId)
       .single()
-    url.pathname = lawyerHome(lp?.application_status)
+    const complete = !!(lp?.bar_council_number && lp?.bio)
+    url.pathname =
+      !lp || !complete ? '/onboarding' : lawyerHome(lp.application_status)
+  } else if (role === 'civilian') {
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('purpose')
+      .eq('id', userId)
+      .single()
+    url.pathname = p?.purpose ? '/dashboard' : '/onboarding'
   } else {
     url.pathname = ROLE_HOME[role ?? 'civilian']
   }
@@ -268,7 +290,7 @@ async function redirectToRoleHome(
 }
 
 // ---------------------------------------------------------------------------
-// Matcher config — skip Next.js internals and static assets.
+// Matcher config - skip Next.js internals and static assets.
 // ---------------------------------------------------------------------------
 
 export const config = {

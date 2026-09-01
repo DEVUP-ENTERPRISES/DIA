@@ -1,5 +1,5 @@
 -- =============================================================================
--- DIA — Digital Inclusive Aid
+-- DIA - Digital Inclusive Aid
 -- Complete Supabase PostgreSQL Schema
 -- Run this entire file in: Supabase Dashboard → SQL Editor → New Query
 -- =============================================================================
@@ -80,13 +80,17 @@ create table public.profiles (
   -- Supabase Auth owns the canonical email; we mirror it here for queries.
   email           text        unique not null,
 
-  -- Authoritative role. Never trust the JWT claim alone — always read this.
+  -- Authoritative role. Never trust the JWT claim alone - always read this.
   role            public.user_role not null,
 
-  -- Optional display fields — populated when the user completes their profile.
+  -- Optional display fields - populated when the user completes their profile.
   full_name       text,
   phone           text,
   avatar_url      text        default null,
+
+  -- Civilian onboarding: why the user is using DIA (free-text or a chosen reason).
+  -- Null until the civilian completes onboarding. Not used for lawyers.
+  purpose         text        default null,
 
   -- Soft-delete / ban flag. False = account deactivated; login is blocked.
   is_active       boolean     default true,
@@ -137,7 +141,7 @@ create table public.lawyer_profiles (
   application_status       public.application_status default 'pending',
   application_submitted_at timestamptz default now(),
 
-  -- Review metadata — written by admin/moderator when they take action.
+  -- Review metadata - written by admin/moderator when they take action.
   reviewed_by              uuid        references public.profiles(id),
   reviewed_at              timestamptz,
   review_notes             text,       -- visible to the lawyer on status pages
@@ -158,7 +162,7 @@ create table public.lawyer_profiles (
 create table public.lawyer_documents (
   id            uuid        primary key default gen_random_uuid(),
 
-  -- FK to lawyer_profiles.id (not profiles.id) — documents belong to the
+  -- FK to lawyer_profiles.id (not profiles.id) - documents belong to the
   -- lawyer profile, not the auth user directly.
   lawyer_id     uuid        not null references public.lawyer_profiles(id)
                               on delete cascade,
@@ -211,7 +215,7 @@ create table public.admin_profiles (
 -- -----------------------------------------------------------------------------
 -- 3.6 activity_logs
 -- -----------------------------------------------------------------------------
--- Append-only audit trail. Never updated or deleted — only inserted.
+-- Append-only audit trail. Never updated or deleted - only inserted.
 -- actor  = the user who performed the action (null for system/unauthenticated)
 -- target = the user the action was performed on (null if not applicable)
 -- action = one of the ActivityAction strings defined in lib/activity-log.ts
@@ -224,6 +228,21 @@ create table public.activity_logs (
   action     text        not null,
   metadata   jsonb       default '{}',
   created_at timestamptz default now()
+);
+
+
+-- -----------------------------------------------------------------------------
+-- 3.7 countries
+-- -----------------------------------------------------------------------------
+-- Reference data for country name + international dialling code. Used to
+-- populate the country and phone-country-code selectors during onboarding.
+-- Public read (reference data); no user writes.
+
+create table public.countries (
+  code       text  primary key,        -- ISO 3166-1 alpha-2, e.g. 'IN'
+  name       text  not null,           -- e.g. 'India'
+  dial_code  text  not null,           -- e.g. '+91'
+  sort_order integer default 100       -- lower = shown first (India first)
 );
 
 
@@ -290,7 +309,7 @@ create trigger update_lawyer_profiles_timestamp
 -- 5.2 handle_new_user()
 -- -----------------------------------------------------------------------------
 -- Fires AFTER INSERT on auth.users (Supabase's internal auth table).
--- Every time someone signs up — via email/password or OAuth — Supabase inserts
+-- Every time someone signs up - via email/password or OAuth - Supabase inserts
 -- a row into auth.users. This trigger immediately creates the matching
 -- public.profiles row with the correct role.
 --
@@ -299,7 +318,7 @@ create trigger update_lawyer_profiles_timestamp
 --      options. Supabase stores this in auth.users.raw_user_meta_data.
 --   2. The trigger reads raw_user_meta_data->>'role' and casts it to user_role.
 --   3. If the cast fails (e.g. OAuth signup with no role hint), it defaults
---      to 'civilian' — the safest default.
+--      to 'civilian' - the safest default.
 --
 -- SECURITY DEFINER means the function runs with the privileges of its owner
 -- (postgres), not the calling user. This is required because the trigger
@@ -333,11 +352,11 @@ create trigger on_auth_user_created
 -- SECTION 6: ROW LEVEL SECURITY (RLS)
 -- =============================================================================
 -- RLS is Postgres's built-in per-row access control. When enabled on a table,
--- ALL queries (even from your own app) are filtered by the policies below —
+-- ALL queries (even from your own app) are filtered by the policies below -
 -- unless the client uses the service-role key, which bypasses RLS entirely.
 --
 -- The anon key and the user's session key (JWT) both respect RLS.
--- The service-role key bypasses RLS — use it only for privileged server ops.
+-- The service-role key bypasses RLS - use it only for privileged server ops.
 --
 -- Pattern used: auth.uid() returns the UUID of the currently authenticated user.
 -- For cross-user reads (admin/moderator seeing other users' data), we check
@@ -350,6 +369,7 @@ alter table public.lawyer_documents  enable row level security;
 alter table public.moderator_profiles enable row level security;
 alter table public.admin_profiles    enable row level security;
 alter table public.activity_logs     enable row level security;
+alter table public.countries         enable row level security;
 
 
 -- =============================================================================
@@ -504,6 +524,16 @@ create policy "Admin can view all activity logs"
 
 
 -- =============================================================================
+-- SECTION 6G: countries policies
+-- =============================================================================
+
+-- Reference data - readable by anyone (used on public onboarding forms).
+create policy "Anyone can read countries"
+  on public.countries for select
+  using (true);
+
+
+-- =============================================================================
 -- SECTION 7: DOCUMENT STORAGE
 -- =============================================================================
 -- Documents are stored in AWS S3, not Supabase Storage.
@@ -533,22 +563,99 @@ create policy "Admin can view all activity logs"
 -- The admin cannot sign up through the UI. Run the steps below manually
 -- after applying this schema.
 --
--- STEP 1 — Create the auth user in Supabase Dashboard:
+-- STEP 1 - Create the auth user in Supabase Dashboard:
 --   Authentication → Users → Add User
 --   Email: admin@yourdomain.com
 --   Password: (strong password)
 --   Auto Confirm User: YES
 --
--- STEP 2 — Update their profile role (the trigger defaults to 'civilian'):
+-- STEP 2 - Update their profile role (the trigger defaults to 'civilian'):
 --
 --   update public.profiles
 --   set role = 'admin'
 --   where email = 'admin@yourdomain.com';
 --
--- STEP 3 — Insert their admin_profiles row:
+-- STEP 3 - Insert their admin_profiles row:
 --
 --   insert into public.admin_profiles (user_id)
 --   select id from public.profiles
 --   where email = 'admin@yourdomain.com';
 --
 -- =============================================================================
+
+
+-- =============================================================================
+-- SECTION 9: MIGRATIONS (idempotent - safe to re-run on existing databases)
+-- =============================================================================
+-- Apply these against an existing database that was created before the column
+-- existed. Running them on a fresh database (which already has the column from
+-- SECTION 3) is a no-op thanks to IF NOT EXISTS.
+
+-- 9.1 profiles.purpose - civilian onboarding: why they are using DIA.
+alter table public.profiles
+  add column if not exists purpose text default null;
+
+-- 9.2 countries - reference table for country name + dialling code.
+create table if not exists public.countries (
+  code       text  primary key,
+  name       text  not null,
+  dial_code  text  not null,
+  sort_order integer default 100
+);
+
+alter table public.countries enable row level security;
+
+-- Public read policy (idempotent - drop then recreate to avoid duplicates).
+drop policy if exists "Anyone can read countries" on public.countries;
+create policy "Anyone can read countries"
+  on public.countries for select
+  using (true);
+
+
+-- =============================================================================
+-- SECTION 10: SEED DATA
+-- =============================================================================
+-- Countries + international dialling codes. India first (sort_order 1), then a
+-- curated set ordered alphabetically. Safe to re-run: on conflict updates the
+-- name/dial_code/sort_order. Extend this list any time.
+
+insert into public.countries (code, name, dial_code, sort_order) values
+  ('AE', 'United Arab Emirates', '+971', 100),
+  ('AU', 'Australia',            '+61',  100),
+  ('BD', 'Bangladesh',           '+880', 100),
+  ('CA', 'Canada',               '+1',   100),
+  ('CN', 'China',                '+86',  100),
+  ('DE', 'Germany',              '+49',  100),
+  ('ES', 'Spain',                '+34',  100),
+  ('FR', 'France',               '+33',  100),
+  ('GB', 'United Kingdom',       '+44',  100),
+  ('ID', 'Indonesia',            '+62',  100),
+  ('IE', 'Ireland',              '+353', 100),
+  ('IT', 'Italy',                '+39',  100),
+  ('JP', 'Japan',                '+81',  100),
+  ('KE', 'Kenya',                '+254', 100),
+  ('LK', 'Sri Lanka',            '+94',  100),
+  ('MY', 'Malaysia',             '+60',  100),
+  ('NG', 'Nigeria',              '+234', 100),
+  ('NP', 'Nepal',                '+977', 100),
+  ('NZ', 'New Zealand',          '+64',  100),
+  ('PH', 'Philippines',          '+63',  100),
+  ('PK', 'Pakistan',             '+92',  100),
+  ('QA', 'Qatar',                '+974', 100),
+  ('SA', 'Saudi Arabia',         '+966', 100),
+  ('SG', 'Singapore',            '+65',  100),
+  ('TH', 'Thailand',             '+66',  100),
+  ('US', 'United States',        '+1',   100),
+  ('ZA', 'South Africa',         '+27',  100)
+on conflict (code) do update
+  set name = excluded.name,
+      dial_code = excluded.dial_code,
+      sort_order = excluded.sort_order;
+
+-- India (fixed separately to keep the tuple above readable).
+insert into public.countries (code, name, dial_code, sort_order) values
+  ('IN', 'India', '+91', 1)
+on conflict (code) do update
+  set name = excluded.name,
+      dial_code = excluded.dial_code,
+      sort_order = excluded.sort_order;

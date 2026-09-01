@@ -1,15 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { ApplicationStatus, UserRole } from '@/types/auth'
 
 /**
  * Supabase OAuth + email-confirmation callback handler.
- * Exchanges the `code` query param for a session, then redirects
- * the user to the correct dashboard based on their role.
+ * Exchanges the `code` query param for a session, promotes Google lawyer
+ * signups to the lawyer role, then redirects based on role + onboarding state.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
   const code = searchParams.get('code')
-  // `next` is set by Supabase when redirecting after email verification.
+  // Set on the OAuth redirect URL when the user chose "lawyer" for a Google signup.
+  const intendedRole = searchParams.get('intended_role')
   const next = searchParams.get('next') ?? '/'
 
   if (!code) {
@@ -25,11 +27,9 @@ export async function GET(request: NextRequest) {
 
   const userId = data.session.user.id
 
-  // Fetch authoritative role from profiles table.
-  // RLS policy "Users can view own profile" covers this — user reads their own row.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, is_active')
+    .select('role, is_active, purpose')
     .eq('id', userId)
     .single()
 
@@ -38,9 +38,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=account_inactive`)
   }
 
-  const role = profile.role
+  let role = profile.role as UserRole
 
-  // Redirect to the correct dashboard.
+  // Google lawyer signup: the trigger defaulted this new account to 'civilian'
+  // (OAuth can't carry role metadata). Promote it to 'lawyer' only if the
+  // account is still a fresh civilian with no onboarding progress.
+  if (
+    intendedRole === 'lawyer' &&
+    role === 'civilian' &&
+    !profile.purpose
+  ) {
+    const { data: lp } = await supabase
+      .from('lawyer_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (!lp) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: 'lawyer' })
+        .eq('id', userId)
+
+      if (!updateError) role = 'lawyer'
+    }
+  }
+
+  // Route based on role + onboarding completion.
   if (role === 'admin') {
     return NextResponse.redirect(`${origin}/admin/dashboard`)
   }
@@ -48,26 +72,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/moderator/dashboard`)
   }
   if (role === 'civilian') {
-    return NextResponse.redirect(`${origin}/dashboard`)
+    return NextResponse.redirect(
+      `${origin}${profile.purpose ? '/dashboard' : '/onboarding'}`,
+    )
   }
 
-  // Lawyer — check application status and onboarding step.
   if (role === 'lawyer') {
     const { data: lp } = await supabase
       .from('lawyer_profiles')
-      .select('application_status, bar_council_number, bio')
+      .select('application_status')
       .eq('user_id', userId)
       .single()
 
-    if (!lp) return NextResponse.redirect(`${origin}/lawyer/profile`)
+    // No lawyer profile yet → complete onboarding.
+    if (!lp) return NextResponse.redirect(`${origin}/onboarding`)
 
-    const status = lp.application_status
-    if (status === 'approved') return NextResponse.redirect(`${origin}/lawyer/dashboard`)
-    if (status === 'hold') return NextResponse.redirect(`${origin}/lawyer/status/hold`)
-    if (status === 'rejected') return NextResponse.redirect(`${origin}/lawyer/status/rejected`)
+    const status = lp.application_status as ApplicationStatus
+    if (status === 'approved') {
+      return NextResponse.redirect(`${origin}/lawyer/dashboard`)
+    }
+    if (status === 'hold') {
+      return NextResponse.redirect(`${origin}/lawyer/status/hold`)
+    }
+    if (status === 'rejected') {
+      return NextResponse.redirect(`${origin}/lawyer/status/rejected`)
+    }
     return NextResponse.redirect(`${origin}/lawyer/status/pending`)
   }
 
-  // Fallback — honour the `next` param from Supabase email links.
   return NextResponse.redirect(`${origin}${next}`)
 }

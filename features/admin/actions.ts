@@ -56,7 +56,7 @@ export async function createModerator(
   const userId = authData.user.id
 
   // Ensure the profiles row has the correct role and full_name.
-  // The handle_new_user trigger will have already inserted a row —
+  // The handle_new_user trigger will have already inserted a row -
   // update it to be safe.
   await supabase
     .from('profiles')
